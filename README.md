@@ -1,1 +1,2 @@
-# archiver
+Archiver program using LZ-algorithm
+
