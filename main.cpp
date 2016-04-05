@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ifstream>
+#include <fstream>
 
 using namespace std;
 
 int kek=0;
-char* input = "hello my baby, hello my darling, hello my right time gal";
+char input[64];
 int l =64;
 char sheet[1025][64];
 char temp[64];
@@ -52,20 +52,22 @@ int main()
     {
         sheet[i][0]=(char)i;
     };
-    int output[300];
-    output[0]=256;
+    ifstream got("test.md");
+    ofstream output("compressed.md");
+    output<<"256/";
     n=258;
-    int o=1;
-    m=2;
-    for (i=0; i<56;i=i+m-1,o++)
+    while (!(got.getline(input,64).eof()))
     {
-        m=2;
-        output[o]=search(m,i);
+        got>>input;
+        for (i=0; i<64;i=i+m-1)
+        {
+            m=2;
+            output<<search(m,i)<<"/";
+        }
+        memset(input,'\0',64);
     }
-    output[o]=257;
-    for (i=0; i<o+1; i++)
-    {
-        printf("%d ",output[i]);
-    }
+    output<<"257";
+    got.close();
+    output.close();
     return 0;
 }
