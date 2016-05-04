@@ -1,3 +1,3 @@
-553504\n
-Svito Alexander Igorevich\n
-Archiver LZW\n
+553504\r\n
+Svito Alexander Igorevich\r\n
+Archiver LZW\r\n
