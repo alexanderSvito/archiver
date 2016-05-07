@@ -1,16 +1,72 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include <string.h>
+#include <ctype.h>
 
 using namespace std;
-#define SHT_L 32768
 
-int l =64;
+typedef struct bfile
+{
+    FILE *file;
+}
+BFILE;
+
+#define P_COUNT 2047
+#define SHEET_SIZE
+
+/*int l =64;
 char sheet[SHT_L][64];
 char temp[64];
-int pos,i,m,n;
+int pos,i,m,n;*/
+
+BFILE *InputIBFile(char *name)
+{
+   BFILE *bfile;
+   bfile = (BFILE *) calloc(1, sizeof(BFILE));
+   if (bfile == NULL){
+      pritnf("Error while opening file\n");
+      exit(0);
+   }
+   bfile->file = fopen(name, "rb");
+   return bfile;
+}
+
+BFILE *InputOBFile(char * name)
+{
+   BFILE *bfile;
+   bfile = (BFILE *) calloc(1, sizeof(BFILE));
+   if (bfile == NULL){
+      pritnf("Error while opening file\n");
+      exit(0);
+   }
+   bfile->file = fopen(name, "wb");
+   return bfile;
+}
+
+void CloseOBFile(BFILE *bfile)
+{
+   fclose( bfile->file);
+   free((char *) bfile);
+}
+
+void CloseIBFile(BFILE *bfile)
+{
+    fclose( bfile->file);
+    free((char *) bfile);
+}
+
+long file_size(char *name)
+{
+   long eof_ftell;
+   FILE *file;
+   file = fopen(name, "r");
+   if ( file == NULL )
+      return(0L);
+   fseek(file, 0L, SEEK_END);
+   eof_ftell = ftell(file);
+   fclose(file);
+   return eof_ftell;
+}
 
 int search(int quant,int i, char input[128])
 {
