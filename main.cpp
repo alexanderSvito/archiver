@@ -50,22 +50,22 @@ int search(int quant,int i, char input[128])
 
 int main()
 {
-	char input[128], tem[8];
-	memset(input,0,128);
+	char input[128], tem[8], ch[1];
 	int count=1, sym=0, g=0;
     for (i=0;i<256; i++)
     {
         sheet[i][0]=(char)i;
     };
-    int output[300], myFile, outFile;
+    int output[300];
+    FILE *fp, *of;
     output[0]=256;
     n=258;
     int o=1;
-    myFile = open("test.md", O_RDONLY);
-    outFile = open("compressed.md", O_WRONLY);
+    fp = fopen("test.txt", "r");
+    of = fopen("compressed.txt", "w");
     while (count!=0) {
     	//printf("%d\n",count);
-    	count=read(myFile,input,128);
+    	fgets(input, 128, fp);
     	//printf("I've counted\n");
     	if (strlen(input)==0) {
     		exit(0);
@@ -86,12 +86,17 @@ int main()
 	        }
 	        tem[g++]=(char)sym;
 	        tem[g]='\0';
-
-	        write(outFile, tem , 8);
-	    }
+	        g=0;
+	        while (tem[g]!='\0'){
+	        	ch[0]=tem[g++];
+	        	printf("%c\n",ch[0]);
+	        	//printf("%c\n",ch);
+	        	fwrite(ch, 1, 1, of);
+	    	}
+	    }	
     }
     printf("I've finished!\n");
-    close(myFile);
-    close(outFile);
+    fclose(fp);
+    fclose(of);
     return 0;
 }
