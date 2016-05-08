@@ -68,6 +68,27 @@ long file_size(char *name)
    return eof_ftell;
 }
 
+struct dictionary
+{
+   int code_value;
+   int prefix_code;
+   char character;
+}
+dict[SHEET_SIZE];
+
+char decode_stack[TABLE_SIZE];
+
+unsigned int decode_string ( unsigned int count, unsignedint code )
+{
+   while ( code > 255 ) /* Пока не встретится код символа */
+   {
+      decode_stack[count++] = dict[code].character;
+      code = dict[code].prefix_code;
+   }
+   decode_stack[count++] = (char) code;
+   return count;
+}
+
 int search(int quant,int i, char input[128])
 {
     if (quant==2)
