@@ -8,6 +8,9 @@ using namespace std;
 typedef struct bfile
 {
     FILE *file;
+    unsigned char status;
+    int r;
+    int P_COUNTer;
 }
 BFILE;
 
@@ -19,52 +22,141 @@ char sheet[SHT_L][64];
 char temp[64];
 int pos,i,m,n;*/
 
-BFILE *InputIBFile(char *name)
+BFILE *InputIBFile( char *name )
 {
    BFILE *bfile;
-   bfile = (BFILE *) calloc(1, sizeof(BFILE));
-   if (bfile == NULL){
-      pritnf("Error while opening file\n");
-      exit(0);
-   }
-   bfile->file = fopen(name, "rb");
+
+   bfile = (BFILE *) calloc( 1, sizeof( BFILE ) );
+   bfile->file = fopen( name, "rb" );
+   bfile->r = 0;
+   bfile->status = 0x80;
+   bfile->pcount = 0;
    return bfile;
 }
 
-BFILE *InputOBFile(char * name)
+BFILE *InputOBFile ( char * name )
 {
    BFILE *bfile;
-   bfile = (BFILE *) calloc(1, sizeof(BFILE));
-   if (bfile == NULL){
-      pritnf("Error while opening file\n");
-      exit(0);
-   }
-   bfile->file = fopen(name, "wb");
+
+   bfile = (BFILE *) calloc( 1, sizeof( BFILE ) );
+   bfile->file = fopen( name, "wb" );
+   bfile->r = 0;
+   bfile->status = 0x80;
+   bfile->pcount = 0;
    return bfile;
 }
 
-void CloseOBFile(BFILE *bfile)
+void CloseOBFile ( BFILE *bfile )
 {
-   fclose( bfile->file);
-   free((char *) bfile);
+   if ( bfile->status != 0x80 )
+      putc( bfile->r, bfile->file );
+   fclose ( bfile->file );
+   free ( (char *) bfile );
 }
 
-void CloseIBFile(BFILE *bfile)
+void CloseIBFile ( BFILE *bfile )
 {
-    fclose( bfile->file);
-    free((char *) bfile);
+    fclose ( bfile->file );
+    free ( (char *) bfile );
 }
 
-long file_size(char *name)
+void WriteBit ( BFILE *bfile, int bit )
+{
+   if ( bit )
+      bfile->r |= bfile->status;
+   bfile->status >>= 1;
+   if ( bfile->status == 0 )
+   {
+      putc( bfile->r, bfile->file );
+      if ( ( bfile->pcount++ & PACIFIER_COUNT ) == 0 )
+         putc( '.', stdout );
+      bfile->r = 0;
+      bfile->status = 0x80;
+   }
+}
+
+void WriteBits( BFILE *bfile, unsigned long code, int count )
+{
+   unsigned long status;
+
+   status = 1L << ( count - 1 );
+   while ( status != 0)
+   {
+      if ( status & code )
+  bfile->r |= bfile->status;
+      bfile->status >>= 1;
+      if ( bfile->status == 0 )
+      {
+  putc( bfile->r, bfile->file );
+  if ( ( bfile->pcount++ & PACIFIER_COUNT ) == 0 )
+            putc( '.', stdout );
+  bfile->r = 0;
+  bfile->status = 0x80;
+      }
+      status >>= 1;
+   }
+}
+
+
+/*int ReadBit( BFILE *bfile )
+{
+   int value;
+
+   if ( bfile->status == 0x80 )
+   {
+      bfile->r = getc( bfile->file );
+      if ( bfile->r == EOF )
+         printf( "Error in function ReadBit!\n" );
+      if ( ( bfile->pcount++ & PACIFIER_COUNT ) == 0 )
+         putc( '.', stdout );
+   }
+
+   value = bfile->r & bfile->status;
+   bfile->status >>= 1;
+   if ( bfile->status == 0 )
+      bfile->status = 0x80;
+   return ( value ? 1 : 0 );
+}*/
+
+unsigned long ReadBits ( BFILE *bfile, int bit_count )
+{
+   unsigned long status;
+   unsigned long return_value;
+
+   status = 1L << ( bit_count - 1 );
+   return_value = 0;
+   while ( status != 0 )
+   {
+      if ( bfile->status == 0x80 )
+      {
+  bfile->r = getc( bfile->file );
+  if ( bfile->r == EOF )
+            printf( "Error in function ReadBits!\n" );
+  if ( ( bfile->pcount++ & PACIFIER_COUNT ) == 0 )
+            putc( '.', stdout );
+      }
+      if ( bfile->r & bfile->status )
+         return_value |= status;
+      status >>= 1;
+      bfile->status >>= 1;
+      if ( bfile->status == 0 )
+  bfile->status = 0x80;
+   }
+
+   return return_value;
+}
+
+long file_size ( char *name )
 {
    long eof_ftell;
    FILE *file;
-   file = fopen(name, "r");
+
+   file = fopen( name, "r" );
    if ( file == NULL )
-      return(0L);
-   fseek(file, 0L, SEEK_END);
-   eof_ftell = ftell(file);
-   fclose(file);
+      return( 0L );
+   fseek( file, 0L, SEEK_END );
+   eof_ftell = ftell( file );
+   fclose( file );
    return eof_ftell;
 }
 
@@ -72,57 +164,86 @@ struct dictionary
 {
    int code_value;
    int prefix_code;
-   char character;
+   char ch;
 }
 dict[SHEET_SIZE];
 
-char decode_stack[TABLE_SIZE];
+/*char decode_stack[SHEET_SIZE];
 
 unsigned int decode_string ( unsigned int count, unsignedint code )
 {
+   while ( code > 255 ) 
+   {
+      decode_stack[count++] = dict[code].ch;
+      code = dict[code].prefix_code;
+   }
+   decode_stack[count++] = (char) code;
+   return count;
+}*/
+
+unsigned int search ( int prefix_code, int ch )
+{
+   int index;
+   int offset;
+
+   index = ( ch << ( BITS - 8 ) ) ^ prefix_code;
+   if ( index == 0 )
+      offset = 1;
+   else
+      offset = TABLE_SIZE - index;
+   for ( ; ; )
+   {
+      if ( dict[index].code_value == UNUSED )
+         return index;
+      if ( dict[index].prefix_code == prefix_code &&
+           dict[index].ch == (char) ch )
+         return index;
+      index -= offset;
+      if ( index < 0 )
+         index += TABLE_SIZE;
+   }
+}
+
+
+unsigned int decode_string ( unsigned int count, unsigned int code )
+{
    while ( code > 255 ) /* Пока не встретится код символа */
    {
-      decode_stack[count++] = dict[code].character;
+      decode_stack[count++] = dict[code].ch;
       code = dict[code].prefix_code;
    }
    decode_stack[count++] = (char) code;
    return count;
 }
 
-int search(int quant,int i, char input[128])
+void CompressFile ( FILE *input, BFILE *output )
 {
-    if (quant==2)
-    {
-        pos = (int)input[i];
-    }
-    int k=0;
-    if (strlen(input)==0) {
-    	exit(0);
-    }
-    for (int j=i; j<i+quant; k++,j++)
-    {
-        temp[k]=input[j];
-    }
-    m=quant;
-    for (l=257; l<SHT_L; l++)
-    {
-        if (strcmp(sheet[l],temp)==0)
-        {
-            pos=l;
-            search(quant+1,i,input);
-        }
-    }
-    for (int f=0; f<65;f++)
-    {
-        sheet[n][f]=temp[f];
-    }
-    n++;
-    quant=2;
-    for (int g=0;g<64;g++)
-    {
-        temp[g]='\0';
-    }
-    return pos;
+   int next_code, ch, string_code;
+   unsigned int index, i;
+   next_code = FIRST_CODE;
+   for ( i = 0 ; i < SHEET_SIZE ; i++ )
+       dict[i].code_value = UNUSED;
+   if ( ( string_code = getc( input ) ) == EOF )
+       string_code = END_OF_STREAM;
+   while ( ( ch = getc( input ) ) != EOF )
+   {
+      index = search ( string_code, ch );
+      if ( dict[index].code_value != -1 )
+         string_code = dict[index].code_value;
+      else
+      {
+  if ( next_code <= MAX_CODE )
+         {
+            dict[index].code_value = next_code++;
+            dict[index].prefix_code = string_code;
+            dict[index].ch = (char) ch;
+         }
+         WriteBits( output, (unsigned long) string_code, BITS );
+         string_code = ch;
+      }
+   }
+   WriteBits( output, (unsigned long) string_code, BITS );
+   WriteBits( output, (unsigned long) END_OF_STREAM, BITS );
 }
 
 int main()
