@@ -246,6 +246,44 @@ void CompressFile ( FILE *input, BFILE *output )
    WriteBits( output, (unsigned long) END_OF_STREAM, BITS );
 }
 
+void ExpandFile ( BFILE *input, FILE *output )
+{
+   unsigned int next_code, new_code, old_code;
+   int ch;
+   unsigned int count;
+
+   next_code = FIRST_CODE;
+   old_code = (unsigned int) ReadBits( input, BITS );
+   if ( old_code == END_OF_STREAM )
+      return;
+   ch = old_code;
+
+   putc ( old_code, output );
+
+   while ( ( new_code = (unsigned int) ReadBits( input, BITS ) )
+             != END_OF_STREAM )
+   {
+      if ( new_code >= next_code )
+      {
+         decode_stack[ 0 ] = (char) ch;
+         count = decode_string( 1, old_code );
+      }
+      else
+         count = decode_string( 0, new_code );
+
+      ch = decode_stack[ count - 1 ];
+      while ( count > 0 )
+         putc( decode_stack[--count], output );
+      if ( next_code <= MAX_CODE )
+      {
+         dict[next_code].prefix_code = old_code;
+         dict[next_code].ch = (char) ch;
+         next_code++;
+      }
+      old_code = new_code;
+   }
+}
+
 int main()
 {
 	char input[128], tem[8], ch[1];
