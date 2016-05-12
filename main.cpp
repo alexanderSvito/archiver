@@ -170,7 +170,7 @@ dict[SHEET_SIZE];
 
 /*char decode_stack[SHEET_SIZE];
 
-unsigned int decode_string ( unsigned int count, unsignedint code )
+unsigned int decodeString ( unsigned int count, unsignedint code )
 {
    while ( code > 255 ) 
    {
@@ -190,7 +190,7 @@ unsigned int search ( int prefix_code, int ch )
    if ( index == 0 )
       offset = 1;
    else
-      offset = TABLE_SIZE - index;
+      offset = SHEET_SIZE - index;
    for ( ; ; )
    {
       if ( dict[index].code_value == UNUSED )
@@ -200,21 +200,10 @@ unsigned int search ( int prefix_code, int ch )
          return index;
       index -= offset;
       if ( index < 0 )
-         index += TABLE_SIZE;
+         index += SHEET_SIZE;
    }
 }
 
-
-unsigned int decode_string ( unsigned int count, unsigned int code )
-{
-   while ( code > 255 ) /* Пока не встретится код символа */
-   {
-      decode_stack[count++] = dict[code].ch;
-      code = dict[code].prefix_code;
-   }
-   decode_stack[count++] = (char) code;
-   return count;
-}
 
 void CompressFile ( FILE *input, BFILE *output )
 {
@@ -266,10 +255,10 @@ void ExpandFile ( BFILE *input, FILE *output )
       if ( new_code >= next_code )
       {
          decode_stack[ 0 ] = (char) ch;
-         count = decode_string( 1, old_code );
+         count = decodeString( 1, old_code );
       }
       else
-         count = decode_string( 0, new_code );
+         count = decodeString( 0, new_code );
 
       ch = decode_stack[ count - 1 ];
       while ( count > 0 )
@@ -284,21 +273,19 @@ void ExpandFile ( BFILE *input, FILE *output )
    }
 }
 
-int main()
+/*int main()
 {
-	char input[128], tem[8], ch[1];
-	int count=1, sym=0, g=0;
-    for (i=0;i<256; i++)
-    {
-        sheet[i][0]=(char)i;
-    };
-    int output[300];
-    FILE *fp, *of;
-    output[0]=256;
-    n=258;
-    int o=1;
-    fp = fopen("test.txt", "r");
-    of = fopen("compressed.txt", "w");
+ setbuf( stdout, NULL );
+
+ if (argc < 4)
+ // usage_exit();
+ 
+ if (argv [1] [0] == 'e' || argv [1] [0] == 'E')
+ {
+  BFILE *output;
+  FILE *input;
+
+  input = fopen( argv[ 2 ], "rb" );
     while (count!=0) {
     	//printf("%d\n",count);
     	fgets(input, 128, fp);
@@ -330,9 +317,13 @@ int main()
 	        	fwrite(ch, 1, 1, of);
 	    	}
 	    }	
-    }
-    printf("I've finished!\n");
-    fclose(fp);
-    fclose(of);
-    return 0;
-}
+  output = fopen( argv[ 3 ], "wb" );
+  printf( "\nDecompression %s into %s\n", argv[ 2 ], argv[ 3 ] );
+  
+  ExpandFile(input, output );
+
+  CloseInputBFile( input );
+  fclose( output );
+
+  printf( "\nDecompression complete." );
+}*/
