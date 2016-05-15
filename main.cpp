@@ -239,15 +239,48 @@ void ExpandFile ( BFile *input, FILE *output )
     }
 }
 
+void printStats(char *input, char *output)
+{
+    long input_size;
+    long output_size;
+    int a;
+
+    input_size = fileSize(input);
+    if (input_size == 0)
+       input_size = 1;
+    output_size = fileSize( output );
+    a = 100-(int)(output_size * 100/input_size);
+    printf( "\nInput size:        %ld bytes\n", input_size );
+    printf( "Output size:       %ld bytes\n", output_size );
+    if (output_size == 0)
+       output_size = 1;
+    printf("Efficiency: %d%%\n", a);
+}
+
 int main(int argc, char* argv[]) {
 	setbuf( stdout, NULL );
 
-	if (argc < 4){
-	    printf ("Using: svt -e/-d infile outfile\n");
+	if (argc < 4 ||(argv[1][1]!= 'r' && argv [1][1] != 'R' && argv[1][1]!= 'e' && argv [1][1] != 'E' && argv[1][1] != 'd' && argv[1][1] != 'D')){
+	    printf ("Using: svt -e/-d/-r infile outfile\n");
 	    printf ("-e   encoding (compression)\n");
 	    printf ("-d   decoding (decompression)\n");
+	    printf ("-r   display summary when done\n");
+	    printf ("All other directives will be ignored\n");
 	    exit(0);
 	}	 
+	if (argc == 5) {
+		char *tmp;
+		tmp = argv[2];
+		argv[2] = argv[3];
+		argv[3] = argv[4];
+		argv[4] = tmp;
+	}
+	if (argv[1][1]== 'r' || argv [1][1] == 'R') {
+		char *tp;
+		tp = argv[4];
+		argv[4] = argv[1];
+		argv[1] = tp;
+	}
 	if (argv[1][1]== 'e' || argv [1][1] == 'E') {
 	    BFile *output;
 	    FILE *input;
@@ -270,6 +303,9 @@ int main(int argc, char* argv[]) {
 	  	fclose(input);
 
 	  	printf( "Compression complete.\n" );
+	  	if (argv[4][1] == 'r' || argv[4][1] == 'R') {
+	  		printStats(argv[2], argv[3]);
+	  	}
 	} else if (argv[1][1] == 'd' || argv[1][1] == 'D') {
 	   	BFile *input;
 	   	FILE *output;
@@ -292,6 +328,8 @@ int main(int argc, char* argv[]) {
 	    fclose(output);
 
 	  	printf( "\nDecompression complete." );
+	  	if (argv[4][1] == 'r' || argv[4][1] == 'R') 
+	  		printStats(argv[2], argv[3]);
 	}
-   return 0;
+    return 0;
 }
