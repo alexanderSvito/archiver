@@ -303,9 +303,11 @@ int main(int argc, char* argv[]) {
 	  	fclose(input);
 
 	  	printf( "Compression complete.\n" );
-	  	if (argv[4][1] == 'r' || argv[4][1] == 'R') {
-	  		printStats(argv[2], argv[3]);
-	  	}
+	  	if (argc == 5) {
+            if (argv[4][1] == 'r' || argv[4][1] == 'R') {
+                printStats(argv[2], argv[3]);
+            }
+        }
 	} else if (argv[1][1] == 'd' || argv[1][1] == 'D') {
 	   	BFile *input;
 	   	FILE *output;
@@ -327,9 +329,12 @@ int main(int argc, char* argv[]) {
 	    CloseIBFile(input);
 	    fclose(output);
 
-	  	printf( "\nDecompression complete." );
-	  	if (argv[4][1] == 'r' || argv[4][1] == 'R') 
-	  		printStats(argv[2], argv[3]);
+	  	printf( "Decompression complete.\n" );
+        if (argc == 5) {
+    	  	if (argv[4][1] == 'r' || argv[4][1] == 'R') {
+    	  		printStats(argv[2], argv[3]);
+            }
+        }
 	}
     return 0;
 }
